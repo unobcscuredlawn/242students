@@ -45,99 +45,7 @@ Before measuring anything, you need to be able to predict and verify what a stac
 
 ### Program 1 — `stack_trace.cpp`
 
-```cpp
-#include <iostream>
-#include <stdexcept>
-#include <string>
-using namespace std;
 
-// ── Linked-list stack ──────────────────────────────────────────────────
-struct Node { int data; Node* next; Node(int v):data(v),next(nullptr){} };
-
-class LinkedStack {
-    Node* head = nullptr;
-    int   sz   = 0;
-public:
-    void push(int v) { Node* n=new Node(v); n->next=head; head=n; sz++; }
-    int  pop()  {
-        if (!head) throw underflow_error("empty");
-        int v=head->data; Node* t=head; head=head->next; delete t; sz--;
-        return v;
-    }
-    int  peek() const { if(!head) throw underflow_error("empty"); return head->data; }
-    bool empty() const { return head==nullptr; }
-    int  size()  const { return sz; }
-
-    void print(const string& label) const {
-        cout << label << " [top→] ";
-        for (Node* c=head; c; c=c->next) cout << c->data << " ";
-        cout << "(size=" << sz << ")\n";
-    }
-    ~LinkedStack() { while(head){ Node* t=head->next; delete head; head=t; } }
-};
-
-// ── Array-based stack ──────────────────────────────────────────────────
-class ArrayStack {
-    static const int CAP = 16;
-    int  data[CAP];
-    int  top = -1;
-public:
-    void push(int v) {
-        if (top==CAP-1) throw overflow_error("full");
-        data[++top]=v;
-    }
-    int  pop()  {
-        if (top==-1) throw underflow_error("empty");
-        return data[top--];
-    }
-    int  peek() const { return data[top]; }
-    bool empty() const { return top==-1; }
-    int  size()  const { return top+1; }
-
-    void print(const string& label) const {
-        cout << label << " [top→] ";
-        for (int i=top; i>=0; i--) cout << data[i] << " ";
-        cout << "(size=" << size() << ")\n";
-    }
-};
-
-void doOp(LinkedStack& ls, ArrayStack& as, const string& op, int val=0) {
-    cout << "\n── " << op;
-    if (op=="push") { cout << "(" << val << ")\n"; ls.push(val); as.push(val); }
-    else if (op=="pop") {
-        int lv=ls.pop(), av=as.pop();
-        cout << " → linked=" << lv << "  array=" << av << "\n";
-    }
-    else if (op=="peek") {
-        cout << " → linked=" << ls.peek() << "  array=" << as.peek() << "\n";
-    }
-    ls.print("  Linked: ");
-    as.print("  Array:  ");
-}
-
-int main() {
-    LinkedStack ls;
-    ArrayStack  as;
-
-    cout << "=== Stack Operation Trace ===\n";
-    ls.print("  Linked: "); as.print("  Array:  ");
-
-    doOp(ls, as, "push", 10);
-    doOp(ls, as, "push", 20);
-    doOp(ls, as, "push", 30);
-    doOp(ls, as, "peek");
-    doOp(ls, as, "pop");
-    doOp(ls, as, "push", 40);
-    doOp(ls, as, "push", 50);
-    doOp(ls, as, "pop");
-    doOp(ls, as, "pop");
-    doOp(ls, as, "pop");
-
-    cout << "\nFinal state:\n";
-    ls.print("  Linked: "); as.print("  Array:  ");
-    cout << "  Both empty? " << (ls.empty() && as.empty() ? "yes" : "no") << "\n";
-}
-```
 
 ### Observation Table 1 — Stack State After Each Operation
 
@@ -146,16 +54,16 @@ Fill in both columns after running the program. Record the contents from top to 
 | Operation | Linked stack (top → bottom) | Array stack (top → bottom) |
 |---|---|---|
 | Initial | *(empty)* | *(empty)* |
-| push(10) | | |
-| push(20) | | |
-| push(30) | | |
-| peek | | |
-| pop | | |
-| push(40) | | |
-| push(50) | | |
-| pop | | |
-| pop | | |
-| pop | | |
+| push(10) | [top→] 10 (size=1) | [top→] 10 (size=1)|
+| push(20) | [top→] 20 10 (size=2) | [top→] 20 10 (size=2) |
+| push(30) | [top→] 30 20 10 (size=2) | [top→] 30 20 10 (size=2) |
+| peek | [top→] 30 20 10 (size=3) | [top→] 30 20 10 (size=3) |
+| pop | [top→] 20 10 (size=2) | [top→] 20 10 (size=2) |
+| push(40) | [top→] 40 20 10 (size=3) | [top→] 40 20 10 (size=3) |
+| push(50) | [top→] 50 40 20 10 (size=4) | [top→] 50 40 20 10 (size=4) |
+| pop | [top→] 40 20 10 (size=3) | [top→] 40 20 10 (size=3) |
+| pop | [top→] 20 10 (size=2) | [top→] 20 10 (size=2) |
+| pop | [top→] 10 (size=1) | [top→] 10 (size=1) |
 
 ---
 
@@ -163,19 +71,19 @@ Fill in both columns after running the program. Record the contents from top to 
 
 **Q1.** After every operation, the linked stack and array stack print the same contents in the same order. They are implemented completely differently internally. What does this tell you about the relationship between an ADT and its implementation?
 
-> Your answer:
+> Your answer:For basic implementation, the ADT will stay the same. This is because the same operations can be used.
 
 **Q2.** The linked stack prints from `head` forward. The array stack prints from `top` downward (index `top` to 0). Both show elements in top-to-bottom order. What does the array `top` index physically represent — and how does it change on push versus pop?
 
-> Your answer:
+> Your answer: The array top is an integer that marks a position. with push, top increments and with pop, top decrements.  
 
 **Q3.** The program does `push(10), push(20), push(30), pop, push(40), push(50), pop, pop, pop`. Before running the program, predict the return value of each `pop` in order. Check your prediction against the output.
 
-> Your prediction (three values, in order):
+> Your prediction (three values, in order): 30, 50, 40, 20.
 
 **Q4.** The array stack has a compile-time capacity of 16. The linked stack has no capacity limit. If you pushed 17 items onto the array stack what would happen? What would happen to the linked stack? What is the practical consequence of choosing each implementation for an application where maximum stack depth is unknown?
 
-> Your answer:
+> Your answer: Pushing 17 items would cause a stack overflow in an array but not a linked stack. Array stacks would be worse for large amounts of items. Linked stacks might run out of memory causing problems.
 
 ---
 
@@ -185,88 +93,17 @@ Bracket matching is a classic stack application — and a good test of whether y
 
 ### Program 2 — `bracket_matching.cpp`
 
-```cpp
-#include <iostream>
-#include <string>
-#include <stack>
-using namespace std;
-
-bool matches(char open, char close) {
-    return (open=='(' && close==')') ||
-           (open=='{' && close=='}') ||
-           (open=='[' && close==']');
-}
-
-void check(const string& s) {
-    stack<char> st;
-    cout << "\nInput: \"" << s << "\"\n";
-    cout << "  Step  Char  Action              Stack (top→)\n";
-    cout << "  " << string(50,'-') << "\n";
-
-    int step = 0;
-    for (char c : s) {
-        step++;
-        string action;
-        if (c=='(' || c=='{' || c=='[') {
-            st.push(c);
-            action = "push '" + string(1,c) + "'";
-        } else if (c==')' || c=='}' || c==']') {
-            if (st.empty()) {
-                action = "ERROR: closer with empty stack";
-                cout << "  " << step << "     '" << c << "'  " << action << "\n";
-                cout << "  RESULT: INVALID\n";
-                return;
-            }
-            char top = st.top(); st.pop();
-            if (matches(top, c))
-                action = "pop '" + string(1,top) + "' matched '" + string(1,c) + "'";
-            else {
-                action = "ERROR: '" + string(1,top) + "' does not match '" + string(1,c) + "'";
-                cout << "  " << step << "     '" << c << "'  " << action << "\n";
-                cout << "  RESULT: INVALID\n";
-                return;
-            }
-        } else {
-            action = "skip";
-        }
-
-        // Print stack contents
-        cout << "  " << step << "     '" << c << "'  "
-             << action;
-        // Print stack (we have to copy it to read without destroying)
-        string stack_str = "";
-        stack<char> tmp = st;
-        while (!tmp.empty()) { stack_str += tmp.top(); stack_str += ' '; tmp.pop(); }
-        cout << string(max(0,(int)(22-action.size())), ' ')
-             << "[" << stack_str << "]\n";
-    }
-
-    if (st.empty())
-        cout << "  RESULT: VALID\n";
-    else
-        cout << "  RESULT: INVALID (unclosed: " << st.size() << " opener(s) remain)\n";
-}
-
-int main() {
-    check("({[]})");
-    check("({[}])");
-    check("((())");
-    check("hello(world[!])");
-    check("");
-}
-```
-
 ### Observation Table 2 — Bracket Matching Results
 
 Record the final RESULT printed for each input string:
 
 | Input | Result | Reason (in your words) |
 |---|---|---|
-| `({[]})` | | |
-| `({[}])` | | |
-| `((())` | | |
-| `hello(world[!])` | | |
-| *(empty string)* | | |
+| `({[]})` | Valid | The algorithm runs into no errors |
+| `({[}])` | Invalid | The algorithm tries to pop `}` but it doesn't match so it throws an exception |
+| `((())` | Invalid | The algorithm is searching for `)` but does not find one and throws an exception |
+| `hello(world[!])` | Valid | The algorithm checks for `({[]})` and ignores all other char |
+| *(empty string)* | Valid | The algorithm checks to see if the string is empty and says it is valid |
 
 ---
 
@@ -276,24 +113,24 @@ Record the final RESULT printed for each input string:
 
 | Char | Action | Stack after (top → bottom) |
 |---|---|---|
-| `(` | push | |
-| `{` | push | |
-| `[` | push | |
-| `]` | pop/match | |
-| `}` | pop/match | |
-| `)` | pop/match | |
+| `(` | push | `(`|
+| `{` | push | `( {`|
+| `[` | push | `( { [`|
+| `]` | pop/match | `( {`|
+| `}` | pop/match | `(`|
+| `)` | pop/match | ---|
 
 **Q6.** For input `({[}])` the program reports INVALID. At which character does it fail, and what exactly is wrong? Why is a queue not a useful data structure for bracket matching — what ordering property of the stack makes the matching work correctly?
 
-> Your answer:
+> Your answer: it fails at `}` because it doesn't match with `[`. The program needs to access the top of the stack easily.
 
 **Q7.** The input `hello(world[!])` contains letters, `!`, and brackets mixed together. The program still reports VALID. What does the program do with non-bracket characters? Why is it correct to ignore them?
 
-> Your answer:
+> Your answer: The program ignores or skips non bracket characters. It is good to ignore them because it is efficient.
 
 **Q8.** The empty string input reports VALID. Is this the right answer? Justify why an empty string is considered balanced.
 
-> Your answer:
+> Your answer: The program automaticly assigns empty strings with valid. This is balanced because there a matching bracket, in order, for every bracket in the string, which is none.
 
 ---
 
@@ -303,128 +140,7 @@ A queue has two active ends — front and back — which makes its state harder 
 
 ### Program 3 — `queue_trace.cpp`
 
-```cpp
-#include <iostream>
-#include <stdexcept>
-#include <string>
-using namespace std;
 
-// ── Linked-list queue ──────────────────────────────────────────────────
-struct QNode { int data; QNode* next; QNode(int v):data(v),next(nullptr){} };
-
-class LinkedQueue {
-    QNode* head = nullptr;
-    QNode* tail = nullptr;
-    int    sz   = 0;
-public:
-    void enqueue(int v) {
-        QNode* n = new QNode(v);
-        if (!tail) { head=tail=n; }
-        else       { tail->next=n; tail=n; }
-        sz++;
-    }
-    int dequeue() {
-        if (!head) throw underflow_error("empty");
-        int v=head->data; QNode* t=head;
-        head=head->next;
-        if (!head) tail=nullptr;   // last element: reset tail too
-        delete t; sz--;
-        return v;
-    }
-    int  front() const { return head->data; }
-    bool empty() const { return head==nullptr; }
-    int  size()  const { return sz; }
-
-    void print(const string& lbl) const {
-        cout << lbl << "[front→] ";
-        for (QNode* c=head; c; c=c->next) cout << c->data << " ";
-        cout << "[←back]  (size=" << sz << ")\n";
-    }
-    ~LinkedQueue() { while(head){ QNode* t=head->next; delete head; head=t; } }
-};
-
-// ── Circular-array queue ───────────────────────────────────────────────
-class ArrayQueue {
-    static const int CAP = 8;
-    int data[CAP];
-    int front_idx = 0, back_idx = 0, cnt = 0;
-public:
-    void enqueue(int v) {
-        if (cnt==CAP) throw overflow_error("full");
-        data[back_idx] = v;
-        back_idx = (back_idx+1) % CAP;
-        cnt++;
-    }
-    int dequeue() {
-        if (cnt==0) throw underflow_error("empty");
-        int v = data[front_idx];
-        front_idx = (front_idx+1) % CAP;
-        cnt--;
-        return v;
-    }
-    int  front() const { return data[front_idx]; }
-    bool empty() const { return cnt==0; }
-    int  size()  const { return cnt; }
-
-    void print(const string& lbl) const {
-        // Print raw array with front and back markers
-        cout << lbl << "raw[";
-        for (int i=0; i<CAP; i++) {
-            if (cnt>0 && i==front_idx) cout << "F:";
-            if (cnt>0 && i==(back_idx==0?CAP-1:back_idx-1)) cout << "B:";
-            if (cnt==0) cout << ".";
-            else {
-                // Is this index logically in use?
-                bool inUse = false;
-                for (int j=0; j<cnt; j++)
-                    if ((front_idx+j)%CAP == i) { inUse=true; break; }
-                cout << (inUse ? to_string(data[i]) : ".");
-            }
-            if (i<CAP-1) cout << "|";
-        }
-        cout << "]  front=" << front_idx
-             << " back=" << back_idx
-             << " cnt=" << cnt << "\n";
-    }
-};
-
-void doQOp(LinkedQueue& lq, ArrayQueue& aq, const string& op, int val=0) {
-    cout << "\n── " << op;
-    if (op=="enqueue") {
-        cout << "(" << val << ")\n";
-        lq.enqueue(val); aq.enqueue(val);
-    } else if (op=="dequeue") {
-        int lv=lq.dequeue(), av=aq.dequeue();
-        cout << " → linked=" << lv << "  array=" << av << "\n";
-    }
-    lq.print("  Linked: ");
-    aq.print("  Array:  ");
-}
-
-int main() {
-    LinkedQueue lq; ArrayQueue aq;
-    cout << "=== Queue Operation Trace ===\n";
-    lq.print("  Linked: "); aq.print("  Array:  ");
-
-    doQOp(lq, aq, "enqueue", 10);
-    doQOp(lq, aq, "enqueue", 20);
-    doQOp(lq, aq, "enqueue", 30);
-    doQOp(lq, aq, "dequeue");
-    doQOp(lq, aq, "enqueue", 40);
-    doQOp(lq, aq, "dequeue");
-    doQOp(lq, aq, "dequeue");
-    doQOp(lq, aq, "enqueue", 50);
-    doQOp(lq, aq, "enqueue", 60);
-    doQOp(lq, aq, "enqueue", 70);
-    doQOp(lq, aq, "dequeue");
-    doQOp(lq, aq, "dequeue");
-    doQOp(lq, aq, "dequeue");
-    doQOp(lq, aq, "dequeue");
-
-    cout << "\nFinal state:\n";
-    lq.print("  Linked: "); aq.print("  Array:  ");
-}
-```
 
 ### Observation Table 3a — Queue Contents After Each Operation
 
@@ -433,20 +149,20 @@ Record front-to-back contents and dequeue return values:
 | Operation | Queue contents (front → back) | Dequeue returned |
 |---|---|---|
 | Initial | *(empty)* | — |
-| enqueue(10) | | — |
-| enqueue(20) | | — |
-| enqueue(30) | | — |
-| dequeue | | |
-| enqueue(40) | | — |
-| dequeue | | |
-| dequeue | | |
-| enqueue(50) | | — |
-| enqueue(60) | | — |
-| enqueue(70) | | — |
-| dequeue | | |
-| dequeue | | |
-| dequeue | | |
-| dequeue | | |
+| enqueue(10) | 10 | — |
+| enqueue(20) | 10 20 | — |
+| enqueue(30) | 10 20 30 | — |
+| dequeue | 20 30 | 10 |
+| enqueue(40) | 20 30 40 | — |
+| dequeue | 30 40 | 20 |
+| dequeue | 40 | 30 |
+| enqueue(50) | 40 50 | — |
+| enqueue(60) | 40 50 60 | — |
+| enqueue(70) | 40 50 60 70 | — |
+| dequeue | 50 60 70 | 40 |
+| dequeue | 60 70 | 50 |
+| dequeue | 70 | 60 |
+| dequeue | empty | 70 |
 
 ### Observation Table 3b — Circular Array Internal State
 
@@ -455,20 +171,20 @@ Record the `front` index, `back` index, and `cnt` printed for the array queue af
 | Operation | `front` index | `back` index | `cnt` |
 |---|---|---|---|
 | Initial | 0 | 0 | 0 |
-| enqueue(10) | | | |
-| enqueue(20) | | | |
-| enqueue(30) | | | |
-| dequeue | | | |
-| enqueue(40) | | | |
-| dequeue | | | |
-| dequeue | | | |
-| enqueue(50) | | | |
-| enqueue(60) | | | |
-| enqueue(70) | | | |
-| dequeue | | | |
-| dequeue | | | |
-| dequeue | | | |
-| dequeue | | | |
+| enqueue(10) | 0 | 1 | 1 |
+| enqueue(20) | 0 | 2 | 2 |
+| enqueue(30) | 0 | 3 | 3 |
+| dequeue | 1 | 3 | 2 |
+| enqueue(40) | 1 | 4 | 3 |
+| dequeue | 2 | 4 | 2 |
+| dequeue | 3 | 4 | 1 |
+| enqueue(50) | 3 | 5 | 2 |
+| enqueue(60) | 3 | 6 | 3 |
+| enqueue(70) | 3 | 7 | 4 |
+| dequeue | 4 | 7 | 3 |
+| dequeue | 5 | 7 | 2 |
+| dequeue | 6 | 7 | 1 |
+| dequeue | 7 | 7 | 0 |
 
 ---
 
@@ -476,15 +192,15 @@ Record the `front` index, `back` index, and `cnt` printed for the array queue af
 
 **Q9.** Look at Table 3a. After every operation, do the linked queue and array queue always contain the same elements in the same order? What does this confirm about the two implementations?
 
-> Your answer:
+> Your answer: The elements are the same and in the same order. For the two implementations, they do not change in the elements or the order.
 
 **Q10.** Look at Table 3b. After the three initial enqueues and one dequeue, the `front` index is 1 (not 0). The element at array index 0 is logically gone — but the dequeue operation never moved any data. What did it do instead? What does this tell you about how "removal" works in a circular array queue?
 
-> Your answer:
+> Your answer: Instead of deleting front and moving all the data, dequeue moves the front marker to the next index then marks the deleted index as empty.
 
 **Q11.** The circular array queue has a `cnt` field tracking the number of elements. An alternative design uses only `front` and `back` indices and considers the queue empty when `front == back`. What ambiguity arises in that design? Why is the `cnt` field (or an `isFull` flag) needed?
 
-> Your answer:
+> Your answer: front and back are equal in two situations, one with the list being full and one with the the array being first initialized. To avoid ambiaguity, a cnt feild is used.
 
 ---
 
@@ -494,130 +210,25 @@ All four operations — push, pop, enqueue, dequeue — are O(1). But the *const
 
 ### Program 4 — `stack_queue_perf.cpp`
 
-```cpp
-#include <iostream>
-#include <vector>
-#include <chrono>
-#include <iomanip>
-#include <numeric>
-using namespace std;
-using Clock = chrono::high_resolution_clock;
-using us    = chrono::duration<double, micro>;
 
-struct Node { int data; Node* next; Node(int v):data(v),next(nullptr){} };
-
-// Minimal linked stack/queue (no size tracking for speed)
-struct LStack {
-    Node* head=nullptr;
-    void  push(int v){ Node* n=new Node(v); n->next=head; head=n; }
-    int   pop()      { int v=head->data; Node* t=head; head=head->next; delete t; return v; }
-};
-
-struct LQueue {
-    Node* head=nullptr; Node* tail=nullptr;
-    void enqueue(int v){ Node* n=new Node(v); if(!tail){head=tail=n;}
-                         else{tail->next=n; tail=n;} }
-    int  dequeue()     { int v=head->data; Node* t=head; head=head->next;
-                         if(!head)tail=nullptr; delete t; return v; }
-};
-
-// Array stack using std::vector (dynamic — no overflow)
-struct VStack {
-    vector<int> data;
-    void push(int v) { data.push_back(v); }
-    int  pop()       { int v=data.back(); data.pop_back(); return v; }
-};
-
-// Circular array queue (fixed cap — large enough for test)
-struct AQueue {
-    static const int CAP=5000001;
-    vector<int> data;
-    int front=0, back=0, cnt=0;
-    AQueue(): data(CAP) {}
-    void enqueue(int v){ data[back]=v; back=(back+1)%CAP; cnt++; }
-    int  dequeue()     { int v=data[front]; front=(front+1)%CAP; cnt--; return v; }
-};
-
-template<typename Fn>
-double timeUs(Fn fn, int reps=3) {
-    auto t0=Clock::now();
-    for(int i=0;i<reps;i++) fn();
-    return us(Clock::now()-t0).count()/reps;
-}
-
-int main() {
-    vector<int> sizes = {100000, 500000, 1000000, 5000000};
-
-    cout << "\n--- Push n items then pop all: Linked Stack vs Vector Stack (microseconds) ---\n\n";
-    cout << setw(10) << "n"
-         << setw(22) << "Linked push+pop"
-         << setw(22) << "Vector push+pop"
-         << setw(16) << "Ratio"
-         << "\n" << string(70,'-') << "\n";
-
-    for (int n : sizes) {
-        double lt = timeUs([&]{
-            LStack s;
-            for(int i=0;i<n;i++) s.push(i);
-            for(int i=0;i<n;i++) s.pop();
-        });
-        double vt = timeUs([&]{
-            VStack s;
-            s.data.reserve(n);
-            for(int i=0;i<n;i++) s.push(i);
-            for(int i=0;i<n;i++) s.pop();
-        });
-        cout << setw(10) << n
-             << setw(22) << fixed << setprecision(0) << lt
-             << setw(22) << vt
-             << setw(15) << setprecision(2) << (lt/vt) << "x\n";
-    }
-
-    cout << "\n--- Enqueue n items then dequeue all: Linked Queue vs Array Queue (microseconds) ---\n\n";
-    cout << setw(10) << "n"
-         << setw(24) << "Linked enq+deq"
-         << setw(24) << "Array enq+deq"
-         << setw(16) << "Ratio"
-         << "\n" << string(74,'-') << "\n";
-
-    for (int n : sizes) {
-        double lt = timeUs([&]{
-            LQueue q;
-            for(int i=0;i<n;i++) q.enqueue(i);
-            for(int i=0;i<n;i++) q.dequeue();
-        });
-        double at = timeUs([&]{
-            AQueue q;
-            for(int i=0;i<n;i++) q.enqueue(i);
-            for(int i=0;i<n;i++) q.dequeue();
-        });
-        cout << setw(10) << n
-             << setw(24) << fixed << setprecision(0) << lt
-             << setw(24) << at
-             << setw(15) << setprecision(2) << (lt/at) << "x\n";
-    }
-
-    cout << "\n";
-}
-```
 
 ### Observation Table 4a — Stack Performance (μs)
 
 | n | Linked push+pop | Vector push+pop | Ratio |
 |---|---|---|---|
-| 100,000 | | | |
-| 500,000 | | | |
-| 1,000,000 | | | |
-| 5,000,000 | | | |
+| 100,000 | 5413 | 6639 | 0.82x |
+| 500,000 | 25806 | 32971 | 0.78x |
+| 1,000,000 | 52446 | 74730 | 0.70x |
+| 5,000,000 | 262014 | 295076 | 0.89x |
 
 ### Observation Table 4b — Queue Performance (μs)
 
 | n | Linked enq+deq | Array enq+deq | Ratio |
 |---|---|---|---|
-| 100,000 | | | |
-| 500,000 | | | |
-| 1,000,000 | | | |
-| 5,000,000 | | | |
+| 100,000 | 3375 | 16147 | 0.21x |
+| 500,000 | 17540 | 23065 | 0.76x |
+| 1,000,000 | 35385 | 32281 | 1.10x |
+| 5,000,000 | 180349 | 106546 | 1.69x |
 
 ---
 
@@ -625,19 +236,19 @@ int main() {
 
 **Q12.** Both linked and array implementations are O(1) per operation, so doubling n should double total time for both. When n grows from 100,000 to 5,000,000 (50×), by approximately what factor does each implementation's time grow? Is this consistent with O(n) total work?
 
-> Your answer:
+> Your answer: When n grows by 50x the implementation grows by 10x.
 
 **Q13.** The array/vector implementation is faster than the linked implementation by a consistent ratio. Both do the same logical work. What accounts for the difference? Name at least one concrete reason.
 
-> Your answer:
+> Your answer: arrays are more cache friendly and the operations are more relient on cache.
 
 **Q14.** The vector stack calls `reserve(n)` before pushing. Remove the `reserve` call mentally and predict whether the timing would change significantly. What does `reserve` prevent, and what cost does it avoid?
 
-> Your answer:
-
+> Your answer: reserve prevents repeated heap allocation and it avoids cache disruption.
+ 
 **Q15.** Based on your observations across all four models, state a concrete rule for when you would prefer a linked-list implementation of a stack or queue over an array-based one. Your rule should reference at least one specific situation where the linked implementation's properties are genuinely advantageous.
 
-> Your answer:
+> Your answer: linked lists are good for garunteed O(1) removals or insertions without resizing or knowing the size of the input.
 
 ---
 
