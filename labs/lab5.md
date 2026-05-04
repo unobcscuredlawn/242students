@@ -256,15 +256,15 @@ Linear probing degrades quickly as the table fills. Double hashing avoids cluste
 
 **Q13.** At λ = 0.50 (half full), linear probing already takes noticeably more probes than double hashing. At λ ≈ 0.89 the gap widens dramatically. In your own words, explain *why* double hashing avoids the primary clustering that hurts linear probing.
 
-> Your answer:
+> Your answer: double hashing will take different paths through the table jumping over clusters and preventing merging.
 
 **Q14.** Chaining's probe count grows slowly and almost linearly with λ — and it still works above λ = 1.0. Open-addressing schemes blow up as λ → 1. From the table, at what load factor does linear probing exceed 3 probes on average? What does that tell you about a safe upper bound for λ in a linearly-probed table?
 
-> Your answer:
+> Your answer: avg probes exceed 3 at λ 0.7. meaning a safe upper bound for λ is 0.7.
 
 **Q15.** Both theoretical formulas (linear and double hashing) are derived assuming **uniform random hashing** — every key equally likely in any slot. Your measured values are based on a specific deterministic hash function on synthetic keys. Are the measured values close to the theoretical predictions? What might cause discrepancies?
 
-> Your answer:
+> Your answer: they are close for lower load factor. decrepencies happen because of primary clustering.
 
 ---
 
