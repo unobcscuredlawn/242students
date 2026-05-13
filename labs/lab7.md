@@ -61,128 +61,7 @@ Before running any algorithm you need to understand what a graph looks like in m
 ### Program 1 — `graph_representations.cpp`
 
 ```cpp
-#include <iostream>
-#include <vector>
-#include <iomanip>
-using namespace std;
 
-// -------- Adjacency list --------
-struct AdjList {
-    int V;
-    vector<vector<pair<int,int>>> adj;  // adj[u] = {(v, weight), ...}
-    AdjList(int v) : V(v), adj(v) {}
-    void addEdge(int u, int v, int w) {
-        adj[u].push_back({v, w});
-        adj[v].push_back({u, w});   // undirected
-    }
-    void print() const {
-        cout << "Adjacency List:\n";
-        for (int u = 0; u < V; u++) {
-            cout << "  " << u << ": ";
-            for (auto [v, w] : adj[u]) cout << "(" << v << ",w=" << w << ") ";
-            cout << "\n";
-        }
-    }
-    // Each pair<int,int> = 8 bytes; vector metadata = 24 bytes per row
-    size_t memBytes() const {
-        size_t total = adj.size() * 24;          // vector headers
-        for (auto& row : adj) total += row.size() * sizeof(pair<int,int>);
-        return total;
-    }
-};
-
-// -------- Adjacency matrix --------
-struct AdjMatrix {
-    int V;
-    vector<vector<int>> mat;   // mat[u][v] = weight, 0 = no edge
-    AdjMatrix(int v) : V(v), mat(v, vector<int>(v, 0)) {}
-    void addEdge(int u, int v, int w) {
-        mat[u][v] = w;
-        mat[v][u] = w;   // undirected
-    }
-    void print() const {
-        cout << "Adjacency Matrix:\n    ";
-        for (int i = 0; i < V; i++) cout << setw(4) << i;
-        cout << "\n    " << string(4*V, '-') << "\n";
-        for (int u = 0; u < V; u++) {
-            cout << setw(2) << u << " |";
-            for (int v = 0; v < V; v++) cout << setw(4) << mat[u][v];
-            cout << "\n";
-        }
-    }
-    size_t memBytes() const { return (size_t)V * V * sizeof(int); }
-};
-
-// Build an identical graph in both representations
-void buildGraph(AdjList& al, AdjMatrix& am,
-                const vector<tuple<int,int,int>>& edges) {
-    for (auto [u, v, w] : edges) {
-        al.addEdge(u, v, w);
-        am.addEdge(u, v, w);
-    }
-}
-
-int main() {
-    // Small example graph (6 vertices, 7 edges)
-    int V = 6;
-    vector<tuple<int,int,int>> edges = {
-        {0,1,4}, {0,2,2}, {1,2,5}, {1,3,10},
-        {2,4,3}, {3,5,7}, {4,5,1}
-    };
-
-    AdjList  al(V);
-    AdjMatrix am(V);
-    buildGraph(al, am, edges);
-
-    al.print(); cout << "\n";
-    am.print(); cout << "\n";
-
-    // Memory comparison across graph sizes
-    cout << "=== Memory Usage: Adjacency List vs Matrix ===\n\n";
-    cout << setw(8)  << "V"
-         << setw(10) << "E"
-         << setw(22) << "List (bytes)"
-         << setw(22) << "Matrix (bytes)"
-         << setw(12) << "Ratio"
-         << "\n" << string(74, '-') << "\n";
-
-    // (V, E) pairs: sparse, medium, dense
-    vector<pair<int,int>> configs = {
-        {10,  12}, {10,  45},            // sparse vs dense, small
-        {100, 150}, {100, 4950},         // sparse vs dense, medium
-        {500, 600}, {500, 124750}        // sparse vs dense, large
-    };
-
-    for (auto [v, e] : configs) {
-        AdjList  testAL(v);
-        AdjMatrix testAM(v);
-        // Distribute e edges evenly around a ring + random chords
-        for (int i = 0; i < v; i++)
-            testAL.addEdge(i, (i+1)%v, 1);
-        // Fill up to e edges with stride-2 chords
-        for (int added = v, s = 2; added < e && s < v; s++) {
-            for (int i = 0; i < v && added < e; i++, added++)
-                testAL.addEdge(i, (i+s)%v, 1);
-        }
-        // Mirror into matrix just for memory accounting
-        for (int i = 0; i < v; i++)
-            for (auto [nb, w] : testAL.adj[i])
-                if (nb > i) testAM.addEdge(i, nb, w);
-
-        size_t lm = testAL.memBytes();
-        size_t mm = testAM.memBytes();
-        cout << setw(8)  << v
-             << setw(10) << e
-             << setw(22) << lm
-             << setw(22) << mm
-             << setw(12) << fixed << setprecision(1)
-             << (double)mm / lm << "x\n";
-    }
-
-    cout << "\nEdge lookup cost:\n";
-    cout << "  Adjacency list:   O(degree(u))  — scan u's neighbor list\n";
-    cout << "  Adjacency matrix: O(1)          — direct index mat[u][v]\n";
-}
 ```
 
 ### Observation Table 1a — Small Graph Structure
@@ -191,12 +70,12 @@ Using the printed output for the 6-vertex graph, fill in the neighbor list for e
 
 | Vertex | Neighbors (v, weight) |
 |---|---|
-| 0 | |
-| 1 | |
-| 2 | |
-| 3 | |
-| 4 | |
-| 5 | |
+| 0 | (1,w=4) (2,w=2) |
+| 1 | (0,w=4) (2,w=5) (3,w=10) |
+| 2 | (0,w=2) (1,w=5) (4,w=3) |
+| 3 | (1,w=10) (5,w=7) |
+| 4 | (2,w=3) (5,w=1) |
+| 5 | (3,w=7) (4,w=1) |
 
 | Matrix position | Value | What it means |
 |---|---|---|
@@ -209,12 +88,12 @@ Using the printed output for the 6-vertex graph, fill in the neighbor list for e
 
 | V | E | List (bytes) | Matrix (bytes) | Ratio (matrix/list) |
 |---|---|---|---|---|
-| 10  | 12     | | | |
-| 10  | 45     | | | |
-| 100 | 150    | | | |
-| 100 | 4,950  | | | |
-| 500 | 600    | | | |
-| 500 | 124,750 | | | |
+| 10  | 12     | 432 | 400 | 0.9x |
+| 10  | 45     | 960 | 400 | 0.4x |
+| 100 | 150    | 4800 | 40000 | 8.3x |
+| 100 | 4,950  | 81600 | 40000 | 0.5x |
+| 500 | 600    | 21600 | 1000000 | 46.3x |
+| 500 | 124,750 | 2008000 | 1000000 | 0.5x |
 
 ---
 
@@ -246,86 +125,14 @@ Run the code below and observe how a problem is formally defined. Pay attention 
 - How the goal test works
 
 ```python
-class EightPuzzle:
-    """Represents an 8-puzzle problem."""
-    
-    def __init__(self, initial_state, goal_state):
-        self.initial = initial_state
-        self.goal = goal_state
-    
-    def get_actions(self, state):
-        """Returns list of valid actions from this state."""
-        actions = []
-        blank_pos = state.index(0)  # Find the blank tile
-        row, col = blank_pos // 3, blank_pos % 3
-        
-        if row > 0: actions.append('UP')
-        if row < 2: actions.append('DOWN')
-        if col > 0: actions.append('LEFT')
-        if col < 2: actions.append('RIGHT')
-        
-        return actions
-    
-    def result(self, state, action):
-        """Returns the state that results from executing action."""
-        new_state = list(state)
-        blank_pos = state.index(0)
-        row, col = blank_pos // 3, blank_pos % 3
-        
-        # Calculate new position based on action
-        if action == 'UP':
-            new_pos = (row - 1) * 3 + col
-        elif action == 'DOWN':
-            new_pos = (row + 1) * 3 + col
-        elif action == 'LEFT':
-            new_pos = row * 3 + (col - 1)
-        elif action == 'RIGHT':
-            new_pos = row * 3 + (col + 1)
-        
-        # Swap blank with tile in new position
-        new_state[blank_pos], new_state[new_pos] = new_state[new_pos], new_state[blank_pos]
-        return tuple(new_state)
-    
-    def is_goal(self, state):
-        """Tests if state is the goal."""
-        return state == self.goal
-    
-    def display_state(self, state):
-        """Pretty print a state."""
-        for i in range(0, 9, 3):
-            print(f"  {state[i]} {state[i+1]} {state[i+2]}")
 
-# Create a problem instance
-initial = (1, 2, 3, 4, 0, 5, 6, 7, 8)  # 0 represents blank
-goal = (0, 1, 2, 3, 4, 5, 6, 7, 8)
-
-problem = EightPuzzle(initial, goal)
-
-print("PROBLEM FORMULATION DEMONSTRATION")
-print("=" * 50)
-print("\nInitial State:")
-problem.display_state(initial)
-
-print("\nGoal State:")
-problem.display_state(goal)
-
-print("\nAvailable actions from initial state:", problem.get_actions(initial))
-
-print("\nApplying action 'UP':")
-new_state = problem.result(initial, 'UP')
-problem.display_state(new_state)
-
-print("\nIs new state the goal?", problem.is_goal(new_state))
-print("Is goal state the goal?", problem.is_goal(goal))
-
-print("\nPath cost: Each move costs 1 (implicit in our formulation)")
 ```
 
 ### Reflection Questions
 
 **Q2:** In the 8-puzzle, we represent states as tuples of 9 numbers. What is one advantage of this representation compared to using a 2D array or other data structures? Consider computational efficiency, memory allocation, mutability and ease of use.
 
-> Your answer:
+> Your answer: Tuples are better for mutibiliy, hashability, and can use sets to show what has been explored.
 
 ---
 
@@ -951,7 +758,7 @@ Fill in the table from the printed output.
 
 **Q12.** You are designing a navigation system (like Google Maps) for a city with 100,000 intersections and 300,000 road segments, all with positive travel times. You need to answer shortest-path queries from any source to any destination in under 50 ms. Which algorithm from Table 6b would you choose and why? Which would you rule out immediately?
 
-> Your answer:
+> Your answer: hint: not all algorithms are shortest path algorithms
 
 ---
 
