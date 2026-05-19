@@ -79,10 +79,10 @@ Using the printed output for the 6-vertex graph, fill in the neighbor list for e
 
 | Matrix position | Value | What it means |
 |---|---|---|
-| mat[0][1] | | |
-| mat[1][0] | | |
-| mat[0][3] | | |
-| mat[3][5] | | |
+| mat[0][1] | 4 | |
+| mat[1][0] | 4 | |
+| mat[0][3] | 0 | |
+| mat[3][5] | 7 | |
 
 ### Observation Table 1b — Memory Usage
 
@@ -101,7 +101,7 @@ Using the printed output for the 6-vertex graph, fill in the neighbor list for e
 
 **Q1.** At V = 100 with E = 150 (sparse), which representation is smaller? At V = 100 with E = 4590, which is smaller? Identify the crossover condition in terms of E and V.
 
-> Your answer:
+> Your answer: An ajacency list is smaller is both cases. The ajacency list will be smaller if E is less than V^2 - V.
 
 ---
 
@@ -156,81 +156,18 @@ Run the code and observe the search process. Focus on:
 - The path returned by BFS
 
 ```python
-from collections import deque
 
-def bfs_search(problem):
-    """Breadth-first search implementation."""
-    
-    # Node: (state, path_from_initial, cost)
-    initial_node = (problem.initial, [], 0)
-    
-    if problem.is_goal(problem.initial):
-        return []
-    
-    frontier = deque([initial_node])  # FIFO queue
-    explored = set()
-    nodes_expanded = 0
-    max_frontier_size = len(frontier)
-    
-    print("BREADTH-FIRST SEARCH")
-    print("=" * 50)
-    
-    while frontier:
-        # Track max frontier size
-        max_frontier_size = max(max_frontier_size, len(frontier))
-        
-        print(f"\nFrontier size: {len(frontier)}, Explored: {len(explored)}")
-        
-        # Remove first node from frontier (FIFO)
-        state, path, cost = frontier.popleft()
-        nodes_expanded += 1
-        
-        print(f"Exploring node {nodes_expanded} (depth {len(path)}):")
-        problem.display_state(state)
-        
-        explored.add(state)
-        
-        # Expand the node
-        for action in problem.get_actions(state):
-            child_state = problem.result(state, action)
-            
-            if child_state not in explored and child_state not in [n[0] for n in frontier]:
-                child_path = path + [action]
-                child_cost = cost + 1
-                
-                if problem.is_goal(child_state):
-                    print(f"\n✓ Goal found!")
-                    print(f"Total nodes expanded: {nodes_expanded}")
-                    print(f"Maximum frontier size: {max_frontier_size}") 
-                    print(f"Solution path: {child_path}")
-                    print(f"Path length: {len(child_path)}")
-                    return child_path
-                
-                frontier.append((child_state, child_path, child_cost))
-    
-    print("\n✗ No solution found.")
-    print(f"Total nodes expanded: {nodes_expanded}")
-    print(f"Maximum frontier size: {max_frontier_size}")  
-    return None
-
-
-initial = (8, 6, 7, 2, 5, 4, 3, 0, 1)
-goal    = (1, 2, 3, 4, 5, 6, 7, 8, 0)
-
-
-problem = EightPuzzle(initial, goal)
-solution = bfs_search(problem)
 ```
 
 ### Reflection Questions
 
 **Q3:** BFS explores nodes level by level (all nodes at depth 1, then all at depth 2, etc.). How does this exploration strategy guarantee that BFS finds the optimal solution for problems where all actions have the same cost?
 
-> Your answer:
+> Your answer: By searching by level, it can garuntee that the first goal has the smallest cost.
 
 **Q4:** Observe the frontier size as the search progresses. Why does the frontier grow so rapidly in BFS, and what does this tell you about the space complexity of this algorithm? How would this affect solving larger problems?
 
-> Your answer:
+> Your answer: the space complexity is O(b^d) where b is the branching factor and d is the depth of the shallowest solution. Larger problems would have issues with the memeory limit.
 
 ---
 
@@ -254,89 +191,22 @@ Run the code and compare DFS to BFS from Exercise 2. Notice:
 - How the depth limit prevents infinite exploration
 
 ```python
-def dfs_search(problem, max_depth=100):
-    """Depth-first search with depth limiting."""
-    
-    initial_node = (problem.initial, [], 0)
-    
-    if problem.is_goal(problem.initial):
-        return []
-    
-    frontier = [initial_node]  # LIFO stack (use list as stack)
-    explored = set()
-    nodes_expanded = 0
-    max_frontier_size = 1
-    
-    print("DEPTH-FIRST SEARCH")
-    print("=" * 50)
-    
-    while frontier:
-        max_frontier_size = max(max_frontier_size, len(frontier))
-        
-        # Remove last node from frontier (LIFO)
-        state, path, cost = frontier.pop()
-        
-        if len(path) > max_depth:
-            continue  # Depth limit reached
-        
-        nodes_expanded += 1
-        print(f"\nExploring node {nodes_expanded} (depth {len(path)}):")
-        problem.display_state(state)
-        
-        if problem.is_goal(state):
-            print(f"\n{'='*50}")
-            print(f"✓ Goal found! Total nodes expanded: {nodes_expanded}")
-            print(f"Maximum frontier size: {max_frontier_size}")
-            print(f"\nGoal state reached:")
-            problem.display_state(state)
-            print(f"\nSolution path: {path}")
-            print(f"Path length: {len(path)}")
-            return path
-        
-        explored.add(state)
-        
-        # Show available actions
-        actions = problem.get_actions(state)
-        print(f"  Available actions: {actions}")
-        
-        # Add children to frontier (in reverse order for consistent behavior)
-        for action in reversed(actions):
-            child_state = problem.result(state, action)
-            print(f"  Applying '{action}' →", end=" ")
-            
-            if child_state not in explored and child_state not in [n[0] for n in frontier]:
-                child_path = path + [action]
-                child_cost = cost + 1
-                frontier.append((child_state, child_path, child_cost))
-                print("added to frontier")
-            else:
-                if child_state in explored:
-                    print("already explored")
-                else:
-                    print("already in frontier")
-    
-    return None
 
-initial = (8, 6, 7, 2, 5, 4, 3, 0, 1)
-goal    = (1, 2, 3, 4, 5, 6, 7, 8, 0)
-
-problem = EightPuzzle(initial, goal)
-solution = dfs_search(problem)
 ```
 
 ### Reflection Questions
 
 **Q5:** Compare the maximum frontier size between DFS and BFS. Why does DFS use significantly less memory, and in what situations would this memory advantage be crucial for solving a problem?
 
-> Your answer:
+> Your answer: It uses less memory because it only needs to remember the current path and a few unexplored alternatives at each level. This is useful when ram is limited and/or the search space is large.
 
 **Q6:** DFS found a solution, but was it the optimal (shortest) solution? Explain why DFS is not guaranteed to find the optimal solution even when one exists, and describe a scenario where DFS might find a very poor solution.
 
-> Your answer:
+> Your answer: DFS might find a solution on a deep branch even though a shorter solution might exist elsewhere. DFS might find a poor solution in the 8 puzzle.
 
 **Q7:** We implemented a depth limit to prevent DFS from exploring infinitely deep paths. What problems could arise without this limit, and how does this relate to the concept of completeness in search algorithms?
 
-> Your answer:
+> Your answer: Some branches might be infinite and prevent the algorithm from making progress. an algortim is complete when it is garunteed to find a solution, but an algorithm without a depth limit can prevent it from finding a solution.
 
 ---
 
@@ -360,112 +230,22 @@ Run the code and observe how UCS differs from BFS. Pay attention to:
 - Why the solution is guaranteed to be optimal
 
 ```python
-import heapq
 
-class GridWorld:
-    """A grid world with varying terrain costs."""
-    
-    def __init__(self, grid, start, goal):
-        self.grid = grid  # 2D list where values are terrain costs
-        self.start = start
-        self.goal = goal
-        self.rows = len(grid)
-        self.cols = len(grid[0])
-    
-    def get_actions(self, state):
-        """Returns valid moves from state."""
-        row, col = state
-        actions = []
-        
-        if row > 0: actions.append(('UP', row - 1, col))
-        if row < self.rows - 1: actions.append(('DOWN', row + 1, col))
-        if col > 0: actions.append(('LEFT', row, col - 1))
-        if col < self.cols - 1: actions.append(('RIGHT', row, col + 1))
-        
-        return actions
-    
-    def step_cost(self, state, action):
-        """Returns cost of moving to new position."""
-        _, new_row, new_col = action
-        return self.grid[new_row][new_col]
-    
-    def is_goal(self, state):
-        return state == self.goal
-
-def ucs_search(problem):
-    """Uniform-cost search implementation."""
-    
-    # Priority queue: (cost, counter, state, path)
-    counter = 0  # For tie-breaking
-    initial_node = (0, counter, problem.start, [])
-    frontier = [initial_node]
-    explored = set()
-    nodes_expanded = 0
-    
-    print("UNIFORM-COST SEARCH")
-    print("=" * 50)
-    print("\nTerrain costs (lower is better):")
-    for row in problem.grid:
-        print(" ", row)
-    print(f"\nStart: {problem.start}, Goal: {problem.goal}\n")
-    
-    while frontier:
-        cost, _, state, path = heapq.heappop(frontier)  # Get lowest-cost node
-        
-        if state in explored:
-            continue
-        
-        nodes_expanded += 1
-        print(f"Expanding node {nodes_expanded}: {state}, Cost: {cost}")
-        
-        if problem.is_goal(state):
-            print(f"\n✓ Goal found! Total nodes expanded: {nodes_expanded}")
-            print(f"Optimal path: {path}")
-            print(f"Total cost: {cost}")
-            return path, cost
-        
-        explored.add(state)
-        
-        for action in problem.get_actions(state):
-            action_name, new_row, new_col = action
-            child_state = (new_row, new_col)
-            
-            if child_state not in explored:
-                step_cost = problem.step_cost(state, action)
-                child_cost = cost + step_cost
-                child_path = path + [action_name]
-                counter += 1
-                
-                heapq.heappush(frontier, (child_cost, counter, child_state, child_path))
-    
-    return None, float('inf')
-
-# Grid where numbers represent terrain difficulty (cost to enter)
-grid = [
-    [1, 1, 1, 1, 1],
-    [1, 5, 5, 5, 1],
-    [1, 5, 1, 5, 1],
-    [1, 1, 1, 5, 1],
-    [1, 1, 1, 1, 1]
-]
-
-problem = GridWorld(grid, start=(0, 0), goal=(4, 4))
-solution, cost = ucs_search(problem)
 ```
 
 ### Reflection Questions
 
 **Q8:** How does UCS decide which node to expand next, and why does this strategy guarantee finding the optimal solution? Compare this to how BFS makes its expansion decisions.
 
-> Your answer:
+> Your answer: at every step, UCS expands the node with the lowest total cost from initial state. it finds the optimal solution because all other paths cost more. BFS finds the lowest depth and UCS finds the lowest cost.
 
 **Q9:** Observe the path found by UCS through the grid. Does it go directly toward the goal, or does it take a longer route? Explain why UCS chose this path in terms of path cost versus path length.
 
-> Your answer:
+> Your answer: UCS takes a longer route in order to save on cost even if it moves more
 
 **Q10:** In what types of problems would UCS perform identically to BFS? When would UCS clearly outperform BFS in terms of solution quality? Give specific examples of problem domains.
 
-> Your answer:
+> Your answer: they would behave the same if the cost is the same. UCS would out perform when actions have different costs.
 
 ---
 
