@@ -58,6 +58,17 @@ Run the program and observe the Part C output.
 **[OBSERVE 3]**
 Copy the full output for Part C. For the first seven insertions (`50` through `80`), the root never changes and the root balance factor stays in {−1, 0}. Why? What property of the insertion sequence ensures no rotation is needed during these seven inserts?
 
+insert(50):  root=50  root_bf=0  height=0
+insert(30):  root=50  root_bf=-1  height=1
+insert(70):  root=50  root_bf=0  height=1
+insert(20):  root=50  root_bf=-1  height=2
+insert(40):  root=50  root_bf=-1  height=2
+insert(60):  root=50  root_bf=0  height=2
+insert(80):  root=50  root_bf=0  height=2
+insert(10):  root=50  root_bf=-1  height=3
+insert(5):  root=50  root_bf=-1  height=3
+
+the insertion ensures the tree is balanced.
 
 ```cpp
 cout << "  left child of root: " << tr->left->val
@@ -79,14 +90,18 @@ The sequence `10, 20, 30` is inserted into a single root node. When `40` is inse
 
 Trace what happens during the split:
 1. What value moves **up** to become the new root?
+   20
 2. What two nodes remain as children?
+   10, 30, and 40
 3. Where does `40` finally land?
+   as the right child
 
 **[OBSERVE 6]**
 The tree is built from a purely sorted sequence `10, 20, ..., 80` — exactly the input that destroys a plain BST. Yet the printed height after all 8 insertions is **1**.
 
 Why doesn't sorted input degenerate a 2-3-4 tree the way it degenerates a plain BST? What structural property prevents it?
 
+a 2-3-4 tree can store multiple keys per node allowing for the tree to remain balanced and at a depth of 1
 ---
 
 ## Part E — Timing: BST vs AVL vs `std::map`
@@ -98,15 +113,21 @@ The plain BST sorted insert takes roughly **1,000× longer** than the AVL insert
 
 What would explain the timing ratio being smaller than the height ratio? (Hint: think about what operations besides comparisons are happening, and how cache behavior changes with tree depth.)
 
+the overhead and effects on cache make the timing ratio slightly smaller then the hieght ratio
+
 **[OBSERVE 8]**
 For **random** input, all three structures are within a small constant factor of each other in insert time, and the BST height (~32) is within 2× of the AVL height (~16).
 
 What does this tell you about when the plain BST is an acceptable choice? What kind of guarantee does it still fail to provide even for random input?
 
+a bst may be faster when the input is random, but it cannot garuntee O(log n) height or operations in worst case.
+
 **[OBSERVE 9]**
 The sorted-built search for `std::map` is slower than AVL in this run, even though both are O(log n) with similar heights. One reason: `std::map` uses a Red-Black tree, which is slightly less balanced than AVL (height ≤ 2 log n vs ≤ 1.44 log n).
 
 But there is another reason related to **memory layout**. A `std::map` node is heap-allocated separately and contains extra pointers (parent, color flag). An `ANode` in this lab also heap-allocates, but what does the `std::map` node contain that the lab's `ANode` does not, and how might that affect cache performance?
+
+std::map has more data leaving less room for nodes.
 
 **[OBSERVE 10]**
 You have now seen three balanced structures — AVL tree, Red-Black tree (`std::map`), and 2-3-4 tree — and timed two of them.
@@ -117,3 +138,5 @@ Suppose you are building a database index that:
 - Needs to support search and range queries
 
 Which of the three structures from this lab would you choose, and why? Be specific about height, disk reads per operation, and the cost of the alternative.
+
+a 2-3-4 tree is the most efficient with the lowest height at about 12, disk searches at about 12, and time searching at 60ms AVL is the next fastest with it being a little more than twice as slow. BST has a wost case of n height and searches. 
